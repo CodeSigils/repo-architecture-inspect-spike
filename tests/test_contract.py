@@ -12,6 +12,7 @@ from repo_architecture_inspect_spike.contract import (
     load_cases,
     parse_completion,
 )
+from repo_architecture_inspect_spike.task import source_repository
 
 
 @pytest.fixture
@@ -71,3 +72,13 @@ def test_plain_json_only() -> None:
     assert parse_completion('{"ok": true}') == {"ok": True}
     with pytest.raises(json.JSONDecodeError):
         parse_completion('```json\n{"ok": true}\n```')
+
+
+def test_relative_source_is_independent_of_loader_cwd(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("REPO_ARCHITECTURE_SOURCE", "../repo-architecture-skill")
+
+    project_root = Path(__file__).resolve().parents[1]
+    assert source_repository() == project_root.parent / "repo-architecture-skill"

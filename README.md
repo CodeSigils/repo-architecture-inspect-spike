@@ -79,8 +79,30 @@ REPO_ARCHITECTURE_SOURCE=../repo-architecture-skill \
 
 The live run remains deliberate and non-CI. It requires an authenticated
 Inspect model provider and may download the Codex CLI into the sandbox when no
-cached version is available. Successful image/Compose validation establishes
-container compatibility only; it does not establish evaluation equivalence.
+cached version is available. Successful direct image/Compose validation
+establishes only basic container compatibility; it does not establish
+compatibility with Inspect's built-in Docker sandbox or evaluation equivalence.
+
+### Live-run finding (2026-07-28)
+
+An authenticated run reached Inspect's sandbox prerequisite check after two
+adapter defects were corrected:
+
+- the OpenAI provider requires the separately installed `openai` SDK;
+- relative `REPO_ARCHITECTURE_SOURCE` paths must be resolved independently of
+  the task loader's changed working directory.
+
+The run then stopped before any model samples executed. Inspect AI 0.3.248
+requires Docker Engine 24.0.6+ and Docker Compose 2.21.0+ semantics. The local
+Podman response uses a different version schema, and `podman-compose` 1.2.0
+rejects the Docker Compose v2 flag `--ansi never`. The project-local executable
+shim is therefore sufficient for direct image builds but not for Inspect's
+built-in Docker sandbox.
+
+The spike does not spoof Docker version responses, rewrite unsupported Compose
+commands, or fall back to an unisolated run. A live comparison now requires
+either a real Docker Engine/Compose v2 environment or an independently tested
+Inspect Podman sandbox provider.
 
 ## Decision Record
 
@@ -90,9 +112,9 @@ container compatibility only; it does not establish evaluation equivalence.
 | Adapter contains no copied cases | Supported |
 | Semantic comparison runs without Inspect | Supported by unit tests |
 | Inspect sample/scorer mapping | Supported: real API import, task discovery, and two-sample construction pass |
-| Rootless Podman image/Compose compatibility | Supported: Compose config resolution and image build pass |
-| Authenticated Codex execution equivalence | Pending live run |
-| Configuration isolation | Pending live run |
+| Rootless Podman image/Compose compatibility | Partial: direct config/build pass; Inspect Docker sandbox prerequisites fail |
+| Authenticated Codex execution equivalence | Blocked before sample execution by sandbox incompatibility |
+| Configuration isolation | Source path is loader-cwd independent; runtime isolation remains untested |
 | Raw Codex diagnostic fidelity | Pending log inspection |
 | Environment-limitation mapping | Pending log inspection |
 | Final filesystem-state scoring | Not testable with current declarative cases |

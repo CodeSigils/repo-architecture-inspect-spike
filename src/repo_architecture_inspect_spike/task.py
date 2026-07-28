@@ -22,9 +22,15 @@ from repo_architecture_inspect_spike.contract import (
 
 
 def source_repository() -> Path:
-    """Resolve the source repository without embedding a machine-local path."""
+    """Resolve the source repository independently of Inspect's loader cwd."""
+    project_root = Path(__file__).resolve().parents[2]
     configured = os.environ.get("REPO_ARCHITECTURE_SOURCE")
-    source = Path(configured) if configured else Path.cwd().parent / "repo-architecture-skill"
+    if configured:
+        source = Path(configured)
+        if not source.is_absolute():
+            source = project_root / source
+    else:
+        source = project_root.parent / "repo-architecture-skill"
     return source.resolve()
 
 
