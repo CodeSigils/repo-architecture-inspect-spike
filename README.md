@@ -135,6 +135,11 @@ OpenAI request failed with an `APIConnectionError` after one retry; zero
 samples completed. This confirms a provider transport failure, not a scorer
 result.
 
+A direct read-only request to `https://api.openai.com/v1/models` then returned
+HTTP 401 `invalid_api_key`: the current environment exposes the literal
+`OPENAI_API_KEY=not-needed` placeholder. GPT-5 therefore has no authenticated
+live evidence in this environment; configure a real key before rerunning.
+
 A one-sample Big Pickle run then completed in 25 seconds with zero retries and
 9,933 tokens, but scored zero. That score is not valid comparative evidence:
 the prompt initially provided insufficient evidence for the exact boundary map.
