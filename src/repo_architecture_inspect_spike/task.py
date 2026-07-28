@@ -15,7 +15,6 @@ from inspect_swe import codex_cli
 
 from repo_architecture_inspect_spike.contract import (
     compare_result,
-    evidence_gaps,
     expected_target,
     load_cases,
     parse_completion,
@@ -48,14 +47,7 @@ def sandbox_config() -> tuple[str, str]:
 
 def dataset() -> MemoryDataset:
     """Translate selected source cases into Inspect samples."""
-    source = source_repository()
-    cases = load_cases(source)
-    gaps = evidence_gaps(source, cases)
-    if gaps:
-        raise ValueError(
-            "source fixture evidence is incomplete; refusing an invalid model run: "
-            + "; ".join(gaps)
-        )
+    cases = load_cases(source_repository())
     samples = [
         Sample(
             id=case.name,

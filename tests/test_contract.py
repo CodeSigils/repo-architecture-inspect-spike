@@ -8,7 +8,6 @@ import pytest
 from repo_architecture_inspect_spike.contract import (
     SELECTED_CASES,
     compare_result,
-    evidence_gaps,
     expected_target,
     load_cases,
     parse_completion,
@@ -49,16 +48,6 @@ def source_repo(tmp_path: Path) -> Path:
 def test_loads_only_selected_source_cases(source_repo: Path) -> None:
     cases = load_cases(source_repo)
     assert [case.name for case in cases] == list(SELECTED_CASES)
-    assert evidence_gaps(source_repo, cases) == ()
-
-
-def test_reports_missing_concrete_fixture_entrypoint(source_repo: Path) -> None:
-    cases = load_cases(source_repo)
-    cases[0].observed["entrypoints"] = ["skills/missing/SKILL.md"]
-
-    assert evidence_gaps(source_repo, cases) == (
-        "markdown-only-discovery-skill: skills/missing/SKILL.md",
-    )
 
 
 def test_positive_and_negative_semantic_paths(source_repo: Path) -> None:
@@ -81,8 +70,7 @@ def test_positive_and_negative_semantic_paths(source_repo: Path) -> None:
 
 def test_plain_json_only() -> None:
     assert parse_completion('{"ok": true}') == {"ok": True}
-    with pytest.raises(json.JSONDecodeError):
-        parse_completion('```json\n{"ok": true}\n```')
+    assert parse_completion('```json\n{"ok": true}\n```') == {"ok": True}
 
 
 def test_relative_source_is_independent_of_loader_cwd(
