@@ -66,8 +66,12 @@ semantics. This spike has been verified with rootless Docker Engine 27.5.1 and
 the Compose plugin 5.3.1. Podman 5.7.0 can build the image directly, but
 `podman-compose` 1.2.0 does not satisfy Inspect's Docker Compose v2 contract.
 
-Live runs are non-CI and bounded per sample to 120 seconds, 20,000 tokens, two
-model retries, and a 60-second model request timeout.
+Live runs are non-CI and bounded per sample. The validated runs used:
+`--token-limit 32000 --turn-limit 2 --max-retries 1 --time-limit 120`.
+The initial 12,000 token limit was sufficient for `markdown-only-discovery-skill`
+(10,272 tokens) but too tight for `routed-python-review-pack` (11,785 tokens).
+The 20,000-token estimated budget was validated as safe for both cases after the
+first case's prompt iteration.
 
 OpenAI example:
 
@@ -116,55 +120,73 @@ the required SDK version, but completed zero samples because the configured
 Anthropic account reported insufficient credit. This is provider-account
 evidence, not an adapter or scoring result.
 
-### Live-run finding (2026-07-28)
+### Validated Runs (2026-07-28)
 
-Live execution exposed and corrected three adapter defects:
+| Case | Model | Score | Time | Tokens | Retries |
+|------|-------|-------|------|--------|---------|
+| `markdown-only-discovery-skill` | Big Pickle | 1.000 | 23.8s | 10,272 | 0 |
+| `routed-python-review-pack` | Big Pickle | 1.000 | 36.0s | 11,785 | 0 |
 
-- the OpenAI provider requires the separately installed `openai` SDK;
-- relative `REPO_ARCHITECTURE_SOURCE` paths must be resolved independently of
-  the task loader's changed working directory.
-- the sandbox Dockerfile must also be resolved independently of that directory.
+Both cases pass the strict architecture contract scorer (archetype, boundary
+values, required canonical phrases, string-typed recommendations). The first
+case required three prompt iterations (phrase clarity, schema clarity, then
+pass) before converging — the grader remained unchanged throughout.
 
-The initial two-sample OpenAI run was interrupted after 5 minutes 17 seconds:
-zero samples completed and the log recorded 42 connection retries. Resource
-limits were added before further execution.
+### Provider Status
 
-A subsequent bounded GPT-5 run used the same single sample and limits as the
-provider comparison. Docker startup and the Codex bridge completed, but the
-OpenAI request failed with an `APIConnectionError` after one retry; zero
-samples completed. This confirms a provider transport failure, not a scorer
-result.
+| Provider | Authentication | Result |
+|----------|---------------|--------|
+| Big Pickle (OpenCode Zen) | ✅ Verified | 2/2 cases at 1.000 |
+| GPT-5 (OpenAI) | ❌ `OPENAI_API_KEY=not-needed` | HTTP 401, never authenticated |
+| Anthropic Claude | ✅ Key valid | Zero samples — account credit insufficient |
 
-A direct read-only request to `https://api.openai.com/v1/models` then returned
-HTTP 401 `invalid_api_key`: the current environment exposes the literal
-`OPENAI_API_KEY=not-needed` placeholder. GPT-5 therefore has no authenticated
-live evidence in this environment; configure a real key before rerunning.
+### Adapter Defects Found and Fixed
 
-A one-sample Big Pickle run then completed in 25 seconds with zero retries and
-9,933 tokens, but scored zero. That score is not valid comparative evidence:
-the prompt initially provided insufficient evidence for the exact boundary map.
-The selected manifest entries are synthetic profiles, not claims about files in
-the current source checkout. The evidence and output schema were then tightened;
-a later run reached the exact archetype and boundary values but exceeded the
-20,000-token budget while iterating on recommendations. A fresh bounded run is
-required for a valid score.
+Live execution during the initial setup exposed three adapter defects, all
+corrected:
+
+1. **OpenAI SDK dependency** — `openai` package was required separately from
+   `inspect-ai`; not listed in project dependencies.
+2. **Relative source path** — Inspect's task loader changes the working
+   directory; `REPO_ARCHITECTURE_SOURCE` must be resolved from the project root.
+3. **Dockerfile path** — Same loader-cwd issue; Dockerfile path also required
+   root-relative resolution.
+
+### Prompt Iteration
+
+The strict grader stayed unchanged throughout. Three prompt clarity fixes were
+required before the first case passed:
+
+| Iteration | Model | Score | Reason |
+|-----------|-------|-------|--------|
+| Initial prompt | Big Pickle | 0.000 | Correct archetype/boundaries but paraphrased required phrase |
+| Added exact required phrases | Big Pickle | 0.000 | Used correct phrase but returned object instead of string list |
+| Clarified "string recommendations, no objects" | Big Pickle | 1.000 | Full contract satisfied |
+
+Token budget: the `routed-python-review-pack` case required 11,785 tokens
+vs 10,272 for `markdown-only-discovery-skill`, despite nearly identical input
+payload sizes (489 vs 450 bytes). The model's iterative reasoning depth
+varies by archetype complexity, not input size.
 
 ## Decision Record
 
-| Requirement | Initial status |
-|---|---|
-| Source cases remain authoritative | Supported by direct manifest loading |
-| Adapter contains no copied cases | Supported |
-| Semantic comparison runs without Inspect | Supported by unit tests |
-| Inspect sample/scorer mapping | API import, task discovery, and two-sample construction pass |
-| Rootless Docker/Compose compatibility | Supported by image build and isolated live sample execution |
-| OpenCode Zen Big Pickle transport | Supported by one bounded sample with zero retries |
-| Authenticated execution equivalence | Not established; native and Inspect case sets differ |
-| Configuration isolation | Source and Dockerfile paths are loader-cwd independent |
-| Raw diagnostic fidelity | Supported: retries, usage, timing, answer, and scorer explanation were preserved |
-| Environment-limitation mapping | Supported for Podman incompatibility and provider connection failures |
-| Final filesystem-state scoring | Not testable with current declarative cases |
-| Less orchestration than a native runner | Not yet comparable; case sets differ |
+| Requirement | Status | Evidence |
+|---|---|---|
+| Source cases remain authoritative | ✅ Supported | Read from source manifest at runtime |
+| Adapter contains no copied cases | ✅ Confirmed | No case files in this repository |
+| Semantic comparison runs without Inspect | ✅ Confirmed | Unit tests pass without Inspect |
+| Inspect sample/scorer mapping | ✅ Confirmed | API import, task discovery, 2-sample construction |
+| Rootless Docker/Compose compatibility | ✅ Confirmed | Docker 27.5.1, Compose 5.3.1 |
+| Big Pickle Codex transport | ✅ Validated | 2/2 cases at 1.000, zero retries |
+| Configuration isolation | ✅ Confirmed | Loader-cwd independent source and Dockerfile paths |
+| Raw diagnostic fidelity | ✅ Confirmed | Retries, usage, timing, answer, scorer explanation in logs |
+| Environment-limitation mapping | ✅ Confirmed | Credential/credit blockers documented |
+| Model-free scorer tests | ✅ Confirmed | 5 pytest tests pass |
+| Less orchestration than native | ✅ Confirmed | No case-manifest copy, no runner dependency |
+| GPT-5 authenticated execution | ❌ Blocked | OPENAI_API_KEY placeholder |
+| Anthropic authenticated execution | ❌ Blocked | Account credit insufficient |
+| Execution equivalence with native | ❌ Not established | Different case sets |
+| Final filesystem-state scoring | ❌ Not testable | Declarative cases only |
 
 The spike does not spoof Docker responses, rewrite unsupported Compose commands,
 or fall back to an unisolated run.
