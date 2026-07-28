@@ -20,6 +20,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
+  "fastapi==0.140.6",
   "inspect-ai==0.3.248",
   "inspect-swe==0.2.65",
   "openai==2.49.0",

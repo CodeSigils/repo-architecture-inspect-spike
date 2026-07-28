@@ -12,7 +12,7 @@ from repo_architecture_inspect_spike.contract import (
     load_cases,
     parse_completion,
 )
-from repo_architecture_inspect_spike.task import source_repository
+from repo_architecture_inspect_spike.task import sandbox_config, source_repository
 
 
 @pytest.fixture
@@ -82,3 +82,14 @@ def test_relative_source_is_independent_of_loader_cwd(
 
     project_root = Path(__file__).resolve().parents[1]
     assert source_repository() == project_root.parent / "repo-architecture-skill"
+
+
+def test_sandbox_dockerfile_is_loader_cwd_independent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.chdir(tmp_path)
+
+    sandbox_type, dockerfile = sandbox_config()
+    assert sandbox_type == "docker"
+    assert Path(dockerfile).is_absolute()
+    assert Path(dockerfile).is_file()

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from inspect_ai import Task, task
 from inspect_ai.dataset import MemoryDataset, Sample
+from inspect_ai.model import GenerateConfig
 from inspect_ai.scorer import Score, Target, accuracy, scorer
 from inspect_ai.solver import TaskState
 from inspect_swe import codex_cli
@@ -21,17 +22,27 @@ from repo_architecture_inspect_spike.contract import (
 )
 
 
+def project_root() -> Path:
+    """Return the spike root independently of the process working directory."""
+    return Path(__file__).resolve().parents[2]
+
+
 def source_repository() -> Path:
     """Resolve the source repository independently of Inspect's loader cwd."""
-    project_root = Path(__file__).resolve().parents[2]
+    root = project_root()
     configured = os.environ.get("REPO_ARCHITECTURE_SOURCE")
     if configured:
         source = Path(configured)
         if not source.is_absolute():
-            source = project_root / source
+            source = root / source
     else:
-        source = project_root.parent / "repo-architecture-skill"
+        source = root.parent / "repo-architecture-skill"
     return source.resolve()
+
+
+def sandbox_config() -> tuple[str, str]:
+    """Return an absolute Dockerfile path for Inspect's file-task loader."""
+    return ("docker", str(project_root() / "docker" / "Dockerfile"))
 
 
 def dataset() -> MemoryDataset:
@@ -83,5 +94,8 @@ def repo_architecture_audit() -> Task:
             version="auto",
         ),
         scorer=architecture_contract(),
-        sandbox=("docker", "docker/Dockerfile"),
+        sandbox=sandbox_config(),
+        config=GenerateConfig(max_retries=2, timeout=60),
+        time_limit=120,
+        token_limit=20_000,
     )

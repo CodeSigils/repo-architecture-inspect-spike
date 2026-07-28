@@ -57,52 +57,55 @@ REPO_ARCHITECTURE_SOURCE=../repo-architecture-skill \
 These checks validate translation and positive/negative scorer semantics
 without making a model call.
 
-## Podman Sandbox Compatibility
+## Sandbox and bounded live runs
 
-This host provides rootless Podman rather than Docker. Inspect AI 0.3.248's
-built-in sandbox provider invokes the literal command `docker compose`; it
-does not expose a container-engine setting. Podman 5.7.0 and
-`podman-compose` 1.2.0 are installed, so this spike includes a project-local
-`bin/docker` compatibility shim that delegates that Docker-compatible CLI
-surface to Podman.
+Inspect AI 0.3.248 requires Docker Engine 24.0.6+ and Docker Compose 2.21.0+
+semantics. This spike has been verified with rootless Docker Engine 27.5.1 and
+the Compose plugin 5.3.1. Podman 5.7.0 can build the image directly, but
+`podman-compose` 1.2.0 does not satisfy Inspect's Docker Compose v2 contract.
 
-The shim is intentionally not installed globally. Scope it to an Inspect run
-by prepending this project's `bin` directory to `PATH`:
+Live runs are non-CI and bounded per sample to 120 seconds, 20,000 tokens, two
+model retries, and a 60-second model request timeout.
+
+OpenAI example:
 
 ```bash
 REPO_ARCHITECTURE_SOURCE=../repo-architecture-skill \
-  PATH="$PWD/bin:$PATH" \
   uv run --locked inspect eval \
   src/repo_architecture_inspect_spike/task.py@repo_architecture_audit \
   --model openai/gpt-5
 ```
 
-The live run remains deliberate and non-CI. It requires an authenticated
-Inspect model provider and may download the Codex CLI into the sandbox when no
-cached version is available. Successful direct image/Compose validation
-establishes only basic container compatibility; it does not establish
-compatibility with Inspect's built-in Docker sandbox or evaluation equivalence.
+OpenCode Zen Big Pickle example:
+
+```bash
+export OPENCODE_ZEN_API_KEY=...
+export OPENCODE_ZEN_BASE_URL=https://opencode.ai/zen/v1
+REPO_ARCHITECTURE_SOURCE=../repo-architecture-skill \
+  uv run --locked inspect eval \
+  src/repo_architecture_inspect_spike/task.py@repo_architecture_audit \
+  --model openai-api/opencode-zen/big-pickle
+```
 
 ### Live-run finding (2026-07-28)
 
-An authenticated run reached Inspect's sandbox prerequisite check after two
-adapter defects were corrected:
+Live execution exposed and corrected three adapter defects:
 
 - the OpenAI provider requires the separately installed `openai` SDK;
 - relative `REPO_ARCHITECTURE_SOURCE` paths must be resolved independently of
   the task loader's changed working directory.
+- the sandbox Dockerfile must also be resolved independently of that directory.
 
-The run then stopped before any model samples executed. Inspect AI 0.3.248
-requires Docker Engine 24.0.6+ and Docker Compose 2.21.0+ semantics. The local
-Podman response uses a different version schema, and `podman-compose` 1.2.0
-rejects the Docker Compose v2 flag `--ansi never`. The project-local executable
-shim is therefore sufficient for direct image builds but not for Inspect's
-built-in Docker sandbox.
+The initial two-sample OpenAI run was interrupted after 5 minutes 17 seconds:
+zero samples completed and the log recorded 42 connection retries. Resource
+limits were added before further execution.
 
-The spike does not spoof Docker version responses, rewrite unsupported Compose
-commands, or fall back to an unisolated run. A live comparison now requires
-either a real Docker Engine/Compose v2 environment or an independently tested
-Inspect Podman sandbox provider.
+A one-sample Big Pickle run then completed in 25 seconds with zero retries and
+9,933 tokens, but scored zero. That score is not valid comparative evidence:
+the prompt provides only observed summary facts, while the grader requires an
+exact boundary map and a specific monitoring recommendation that are not
+derivable from those facts. The second sample was not run. The next experiment
+must repair fixture sufficiency without embedding the expected answer.
 
 ## Decision Record
 
@@ -112,17 +115,17 @@ Inspect Podman sandbox provider.
 | Adapter contains no copied cases | Supported |
 | Semantic comparison runs without Inspect | Supported by unit tests |
 | Inspect sample/scorer mapping | Supported: real API import, task discovery, and two-sample construction pass |
-| Rootless Podman image/Compose compatibility | Partial: direct config/build pass; Inspect Docker sandbox prerequisites fail |
-| Authenticated Codex execution equivalence | Blocked before sample execution by sandbox incompatibility |
-| Configuration isolation | Source path is loader-cwd independent; runtime isolation remains untested |
-| Raw Codex diagnostic fidelity | Pending log inspection |
-| Environment-limitation mapping | Pending log inspection |
+| Rootless Docker/Compose compatibility | Supported by image build and isolated live sample execution |
+| OpenCode Zen Big Pickle transport | Supported by one bounded sample with zero retries |
+| Authenticated execution equivalence | Not established; current prompt/grader contract is underdetermined |
+| Configuration isolation | Source and Dockerfile paths are loader-cwd independent |
+| Raw diagnostic fidelity | Supported: retries, usage, timing, answer, and scorer explanation were preserved |
+| Environment-limitation mapping | Supported for Podman incompatibility and provider connection failures |
 | Final filesystem-state scoring | Not testable with current declarative cases |
 | Less orchestration than a native runner | Not comparable; native runner absent |
 
-The local shim addresses only Inspect's hard-coded executable name. The spike
-does not fall back to an unisolated live run because that would change the
-contract being evaluated.
+The spike does not spoof Docker responses, rewrite unsupported Compose commands,
+or fall back to an unisolated run.
 
 ## Evidence
 
@@ -131,6 +134,8 @@ contract being evaluated.
 - [Inspect AI scoring](https://inspect.aisi.org.uk/multiple-scorers.html)
 - [Inspect AI sandboxing](https://inspect.aisi.org.uk/sandboxing.html)
 - [Inspect AI custom sandbox extensions](https://inspect.aisi.org.uk/extensions-sandboxes.html)
+- [Inspect AI model providers](https://inspect.aisi.org.uk/providers.html)
 - [Podman Compose](https://docs.podman.io/en/latest/markdown/podman-compose.1.html)
+- [OpenCode Zen](https://opencode.ai/docs/zen/)
 - [Inspect SWE Codex CLI](https://meridianlabs-ai.github.io/inspect_swe/codex_cli.html)
 - Source repository: `../repo-architecture-skill`
