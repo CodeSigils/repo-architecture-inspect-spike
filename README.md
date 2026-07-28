@@ -105,7 +105,9 @@ A one-sample Big Pickle run then completed in 25 seconds with zero retries and
 the prompt provides only observed summary facts, while the grader requires an
 exact boundary map and a specific monitoring recommendation that are not
 derivable from those facts. The second sample was not run. The next experiment
-must repair fixture sufficiency without embedding the expected answer.
+must repair fixture sufficiency without embedding the expected answer. The
+adapter now preflights concrete fixture entrypoints and refuses a model run
+when the source checkout does not contain them.
 
 ## Decision Record
 
@@ -118,6 +120,7 @@ must repair fixture sufficiency without embedding the expected answer.
 | Rootless Docker/Compose compatibility | Supported by image build and isolated live sample execution |
 | OpenCode Zen Big Pickle transport | Supported by one bounded sample with zero retries |
 | Authenticated execution equivalence | Not established; current prompt/grader contract is underdetermined |
+| Fixture evidence completeness | Preflight supported; current source checkout reports missing selected entrypoints |
 | Configuration isolation | Source and Dockerfile paths are loader-cwd independent |
 | Raw diagnostic fidelity | Supported: retries, usage, timing, answer, and scorer explanation were preserved |
 | Environment-limitation mapping | Supported for Podman incompatibility and provider connection failures |

@@ -61,6 +61,22 @@ def load_cases(source_repo: Path) -> list[Case]:
     ]
 
 
+def evidence_gaps(source_repo: Path, cases: list[Case]) -> tuple[str, ...]:
+    """Report concrete fixture entrypoints absent from the source checkout."""
+    gaps: list[str] = []
+    for case in cases:
+        entrypoints = case.observed.get("entrypoints", [])
+        if not isinstance(entrypoints, list):
+            continue
+        for entrypoint in entrypoints:
+            if not isinstance(entrypoint, str) or not entrypoint.endswith(".md"):
+                continue
+            path = source_repo / entrypoint
+            if not path.is_file():
+                gaps.append(f"{case.name}: {entrypoint}")
+    return tuple(gaps)
+
+
 def prompt_for(case: Case) -> str:
     """Create the narrow JSON-output prompt for one source case."""
     return (
