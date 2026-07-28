@@ -1,0 +1,25 @@
+# Environments and local configuration
+.venv/
+.env
+.env.*
+!.env.example
+
+# Python caches and build output
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# Inspect evaluation output and local logs
+logs/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+*~

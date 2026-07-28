@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# Inspect AI 0.3.248 invokes its built-in sandbox as `docker compose`.
+# Keep this Podman compatibility shim on PATH only for the Inspect command.
+exec podman "$@"

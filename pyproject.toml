@@ -1,0 +1,50 @@
+[project]
+name = "repo-architecture-inspect-spike"
+version = "0.1.0"
+description = "Thin Inspect adapter compatibility spike for repo-architecture-skill"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+keywords = [
+  "agent-evaluation",
+  "inspect-ai",
+  "inspect-swe",
+  "repository-architecture",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Quality Assurance",
+  "Typing :: Typed",
+]
+dependencies = [
+  "inspect-ai==0.3.248",
+  "inspect-swe==0.2.65",
+]
+
+[project.urls]
+Homepage = "https://github.com/CodeSigils/repo-architecture-inspect-spike"
+Issues = "https://github.com/CodeSigils/repo-architecture-inspect-spike/issues"
+Repository = "https://github.com/CodeSigils/repo-architecture-inspect-spike"
+
+[dependency-groups]
+dev = [
+  "pytest==8.4.1",
+  "ruff==0.15.22",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/repo_architecture_inspect_spike"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
