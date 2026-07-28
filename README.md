@@ -116,7 +116,7 @@ when the source checkout does not contain them.
 | Source cases remain authoritative | Supported by direct manifest loading |
 | Adapter contains no copied cases | Supported |
 | Semantic comparison runs without Inspect | Supported by unit tests |
-| Inspect sample/scorer mapping | Supported: real API import, task discovery, and two-sample construction pass |
+| Inspect sample/scorer mapping | API import passes; task construction is correctly blocked by incomplete source evidence |
 | Rootless Docker/Compose compatibility | Supported by image build and isolated live sample execution |
 | OpenCode Zen Big Pickle transport | Supported by one bounded sample with zero retries |
 | Authenticated execution equivalence | Not established; current prompt/grader contract is underdetermined |
