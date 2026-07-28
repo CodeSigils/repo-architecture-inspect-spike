@@ -89,6 +89,28 @@ REPO_ARCHITECTURE_SOURCE=../repo-architecture-skill \
   --model openai-api/opencode-zen/big-pickle
 ```
 
+Anthropic comparator:
+
+```bash
+export ANTHROPIC_API_KEY=...
+REPO_ARCHITECTURE_SOURCE=../repo-architecture-skill \
+  uv run --locked inspect eval \
+  src/repo_architecture_inspect_spike/task.py@repo_architecture_audit \
+  --model anthropic/claude-sonnet-4-0
+```
+
+The Anthropic path is intentionally a separate-provider comparator; it does
+not establish that the models are equivalent. For a controlled first check,
+run the same sample and limits against each model:
+
+```bash
+--sample-id markdown-only-discovery-skill --token-limit 12000 --turn-limit 2
+```
+
+Record model, provider, sample ID, limits, retries, tokens, score, and raw
+answer before comparing results. Model availability and pricing are provider
+configuration, not properties of this adapter.
+
 ### Live-run finding (2026-07-28)
 
 Live execution exposed and corrected three adapter defects:
