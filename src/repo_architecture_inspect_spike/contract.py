@@ -63,6 +63,7 @@ def load_cases(source_repo: Path) -> list[Case]:
 
 def prompt_for(case: Case) -> str:
     """Create the narrow JSON-output prompt for one source case."""
+    required_recommendations = case.expected["required_recommendations"]
     return (
         "Apply the repo-architecture-skill methodology to the observed repository "
         "facts below. Return one JSON object with exactly these keys: archetype, "
@@ -77,7 +78,10 @@ def prompt_for(case: Case) -> str:
         "monitoring when the evidence calls for it. Preserve canonical evidence "
         "phrases instead of paraphrasing them. If evidence identifies a directory "
         "as the runtime input, report that directory rather than only its entrypoint "
-        "file. Return raw JSON without Markdown.\n\n"
+        "file. Each required recommendation must contain one of these exact "
+        "canonical phrases: "
+        f"{json.dumps(required_recommendations, ensure_ascii=False)}. "
+        "Return raw JSON without Markdown.\n\n"
         f"case_id: {case.name}\n"
         f"observed: {json.dumps(case.observed, sort_keys=True)}"
     )
