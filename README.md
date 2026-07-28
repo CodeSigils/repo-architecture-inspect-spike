@@ -7,9 +7,10 @@ or source of project behavior.
 ## Baseline Finding
 
 The current `repo-architecture-skill/main` contains 11 declarative cases in
-`evals/cases/architecture-audit.json`, deterministic manifest validation, and
-named-runtime compatibility reports. It does not contain the native live runner
-and final-state semantic grader assumed by the original comparison proposal.
+`evals/cases/architecture-audit.json`, deterministic manifest validation, named-
+runtime compatibility reports, and a native Codex runner with a semantic grader.
+The native runner currently evaluates a different positive/negative case pair
+than this Inspect adapter.
 
 This spike therefore tests:
 
@@ -18,7 +19,8 @@ This spike therefore tests:
 3. whether a thin Inspect `Sample` and scorer translation imports successfully;
 4. whether Inspect SWE can provide optional Codex execution and evidence.
 
-It cannot yet establish native-versus-Inspect execution equivalence or
+It cannot yet establish native-versus-Inspect execution equivalence because the
+two runners do not share the same case set. It also cannot establish
 final-filesystem equivalence.
 
 ## Ownership Boundary
@@ -102,12 +104,12 @@ limits were added before further execution.
 
 A one-sample Big Pickle run then completed in 25 seconds with zero retries and
 9,933 tokens, but scored zero. That score is not valid comparative evidence:
-the prompt provides only observed summary facts, while the grader requires an
-exact boundary map and a specific monitoring recommendation that are not
-derivable from those facts. The second sample was not run. The next experiment
-must repair fixture sufficiency without embedding the expected answer. The
-adapter now preflights concrete fixture entrypoints and refuses a model run
-when the source checkout does not contain them.
+the prompt initially provided insufficient evidence for the exact boundary map.
+The selected manifest entries are synthetic profiles, not claims about files in
+the current source checkout. The evidence and output schema were then tightened;
+a later run reached the exact archetype and boundary values but exceeded the
+20,000-token budget while iterating on recommendations. A fresh bounded run is
+required for a valid score.
 
 ## Decision Record
 
@@ -116,16 +118,15 @@ when the source checkout does not contain them.
 | Source cases remain authoritative | Supported by direct manifest loading |
 | Adapter contains no copied cases | Supported |
 | Semantic comparison runs without Inspect | Supported by unit tests |
-| Inspect sample/scorer mapping | API import passes; task construction is correctly blocked by incomplete source evidence |
+| Inspect sample/scorer mapping | API import, task discovery, and two-sample construction pass |
 | Rootless Docker/Compose compatibility | Supported by image build and isolated live sample execution |
 | OpenCode Zen Big Pickle transport | Supported by one bounded sample with zero retries |
-| Authenticated execution equivalence | Not established; current prompt/grader contract is underdetermined |
-| Fixture evidence completeness | Preflight supported; current source checkout reports missing selected entrypoints |
+| Authenticated execution equivalence | Not established; native and Inspect case sets differ |
 | Configuration isolation | Source and Dockerfile paths are loader-cwd independent |
 | Raw diagnostic fidelity | Supported: retries, usage, timing, answer, and scorer explanation were preserved |
 | Environment-limitation mapping | Supported for Podman incompatibility and provider connection failures |
 | Final filesystem-state scoring | Not testable with current declarative cases |
-| Less orchestration than a native runner | Not comparable; native runner absent |
+| Less orchestration than a native runner | Not yet comparable; case sets differ |
 
 The spike does not spoof Docker responses, rewrite unsupported Compose commands,
 or fall back to an unisolated run.

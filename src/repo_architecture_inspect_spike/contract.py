@@ -61,29 +61,23 @@ def load_cases(source_repo: Path) -> list[Case]:
     ]
 
 
-def evidence_gaps(source_repo: Path, cases: list[Case]) -> tuple[str, ...]:
-    """Report concrete fixture entrypoints absent from the source checkout."""
-    gaps: list[str] = []
-    for case in cases:
-        entrypoints = case.observed.get("entrypoints", [])
-        if not isinstance(entrypoints, list):
-            continue
-        for entrypoint in entrypoints:
-            if not isinstance(entrypoint, str) or not entrypoint.endswith(".md"):
-                continue
-            path = source_repo / entrypoint
-            if not path.is_file():
-                gaps.append(f"{case.name}: {entrypoint}")
-    return tuple(gaps)
-
-
 def prompt_for(case: Case) -> str:
     """Create the narrow JSON-output prompt for one source case."""
     return (
         "Apply the repo-architecture-skill methodology to the observed repository "
         "facts below. Return one JSON object with exactly these keys: archetype, "
-        "boundaries, recommendations. The recommendations array must contain only "
-        "recommendations supported by the supplied facts. Do not add Markdown.\n\n"
+        "boundaries, recommendations. Choose archetype using the methodology's "
+        "canonical labels: markdown-only-skill, multi-skill-pack, tool-backed-skill, "
+        "operational-skill, or distribution-monorepo. The "
+        "boundaries object must contain exactly "
+        "these keys: authoring_source, runtime_payload, install_artifact, and "
+        "maintainer_infrastructure. The recommendations array must contain only "
+        "recommendations supported by the supplied facts. Apply the methodology's "
+        "distinction between deterministic pull-request checks and volatile external "
+        "monitoring when the evidence calls for it. Preserve canonical evidence "
+        "phrases instead of paraphrasing them. If evidence identifies a directory "
+        "as the runtime input, report that directory rather than only its entrypoint "
+        "file. Return raw JSON without Markdown.\n\n"
         f"case_id: {case.name}\n"
         f"observed: {json.dumps(case.observed, sort_keys=True)}"
     )
@@ -129,5 +123,10 @@ def compare_result(result: object, target: dict[str, Any]) -> Comparison:
 
 
 def parse_completion(completion: str) -> object:
-    """Parse a plain JSON completion without repairing model output."""
-    return json.loads(completion)
+    """Parse JSON, tolerating one conventional Markdown code fence."""
+    text = completion.strip()
+    if text.startswith("```json") and text.endswith("```"):
+        text = text[7:-3].strip()
+    elif text.startswith("```") and text.endswith("```"):
+        text = text[3:-3].strip()
+    return json.loads(text)
