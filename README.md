@@ -111,6 +111,11 @@ Record model, provider, sample ID, limits, retries, tokens, score, and raw
 answer before comparing results. Model availability and pricing are provider
 configuration, not properties of this adapter.
 
+The bounded Anthropic probe reached the provider successfully after installing
+the required SDK version, but completed zero samples because the configured
+Anthropic account reported insufficient credit. This is provider-account
+evidence, not an adapter or scoring result.
+
 ### Live-run finding (2026-07-28)
 
 Live execution exposed and corrected three adapter defects:

@@ -20,7 +20,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dependencies = [
-  "anthropic==0.84.0",
+  "anthropic==0.115.0",
   "fastapi==0.140.6",
   "inspect-ai==0.3.248",
   "inspect-swe==0.2.65",
