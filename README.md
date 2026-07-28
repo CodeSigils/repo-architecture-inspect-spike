@@ -129,6 +129,12 @@ The initial two-sample OpenAI run was interrupted after 5 minutes 17 seconds:
 zero samples completed and the log recorded 42 connection retries. Resource
 limits were added before further execution.
 
+A subsequent bounded GPT-5 run used the same single sample and limits as the
+provider comparison. Docker startup and the Codex bridge completed, but the
+OpenAI request failed with an `APIConnectionError` after one retry; zero
+samples completed. This confirms a provider transport failure, not a scorer
+result.
+
 A one-sample Big Pickle run then completed in 25 seconds with zero retries and
 9,933 tokens, but scored zero. That score is not valid comparative evidence:
 the prompt initially provided insufficient evidence for the exact boundary map.
