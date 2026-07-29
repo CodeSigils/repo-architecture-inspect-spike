@@ -136,10 +136,17 @@ def compare_result(result: object, target: dict[str, Any]) -> Comparison:
 
 
 def parse_completion(completion: str) -> object:
-    """Parse JSON, tolerating one conventional Markdown code fence."""
+    """Parse JSON, tolerating explanatory text and a conventional code fence."""
     text = completion.strip()
     if text.startswith("```json") and text.endswith("```"):
         text = text[7:-3].strip()
     elif text.startswith("```") and text.endswith("```"):
         text = text[3:-3].strip()
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start < 0 or end <= start:
+            raise
+        return json.loads(text[start : end + 1])
