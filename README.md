@@ -7,14 +7,15 @@ or source of project behavior.
 ## Baseline Finding
 
 The current `repo-architecture-skill/main` contains 11 declarative cases in
-`evals/cases/architecture-audit.json`, deterministic manifest validation, named-
-runtime compatibility reports, and a native Codex runner with a semantic grader.
-The native runner currently evaluates a different positive/negative case pair
-than this Inspect adapter.
+`evals/cases/architecture-audit.json`, a shared
+`evals/cases/architecture-duplicate-mirror.json` contract, deterministic
+manifest validation, named-runtime compatibility reports, and a native Codex
+runner with a semantic grader.
 
 This spike therefore tests:
 
-1. whether two existing cases can be consumed without copying them;
+1. whether source-owned cases, including the shared equivalence case, can be
+   consumed without copying them;
 2. whether repository-owned semantic comparison remains independent of Inspect;
 3. whether a thin Inspect `Sample` and scorer translation imports successfully;
 4. whether Inspect SWE can provide optional Codex execution and evidence.
@@ -32,8 +33,8 @@ final-filesystem equivalence.
 | Samples, scorer wrapper, sandbox, Codex execution, and logs | Inspect adapter |
 | Adoption decision | Human review after recorded results |
 
-The adapter reads the source manifest at runtime. It has no copied case file and
-no independent result schema.
+The adapter reads the source manifest and shared equivalence case at runtime. It
+has no copied case file and no independent result schema.
 
 ## Setup
 
@@ -175,7 +176,7 @@ varies by archetype complexity, not input size.
 | Source cases remain authoritative | ✅ Supported | Read from source manifest at runtime |
 | Adapter contains no copied cases | ✅ Confirmed | No case files in this repository |
 | Semantic comparison runs without Inspect | ✅ Confirmed | Unit tests pass without Inspect |
-| Inspect sample/scorer mapping | ✅ Confirmed | API import, task discovery, 2-sample construction |
+| Inspect sample/scorer mapping | ✅ Confirmed | API import, task discovery, 3-sample construction |
 | Rootless Docker/Compose compatibility | ✅ Confirmed | Docker 27.5.1, Compose 5.3.1 |
 | Big Pickle Codex transport | ✅ Validated | 2/2 cases at 1.000, zero retries |
 | Configuration isolation | ✅ Confirmed | Loader-cwd independent source and Dockerfile paths |

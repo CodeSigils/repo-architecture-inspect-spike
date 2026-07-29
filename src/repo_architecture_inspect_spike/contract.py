@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 SELECTED_CASES = (
+    "architecture-duplicate-mirror",
     "markdown-only-discovery-skill",
     "routed-python-review-pack",
 )
@@ -36,16 +37,23 @@ class Comparison:
 
 def load_cases(source_repo: Path) -> list[Case]:
     """Load selected cases directly from the source repository manifest."""
+    shared = source_repo / "evals" / "cases" / "architecture-duplicate-mirror.json"
     manifest = source_repo / "evals" / "cases" / "architecture-audit.json"
     data = json.loads(manifest.read_text(encoding="utf-8"))
     fixtures = data.get("fixtures")
     if not isinstance(fixtures, list):
         raise TypeError(f"{manifest}: fixtures must be a list")
 
-    by_name = {
+    by_name: dict[str, dict[str, Any]] = {
         item["name"]: item
         for item in fixtures
         if isinstance(item, dict) and isinstance(item.get("name"), str)
+    }
+    shared_data = json.loads(shared.read_text(encoding="utf-8"))
+    by_name["architecture-duplicate-mirror"] = {
+        "name": "architecture-duplicate-mirror",
+        "observed": shared_data["observed"],
+        "expected": shared_data["expected"],
     }
     missing = [name for name in SELECTED_CASES if name not in by_name]
     if missing:

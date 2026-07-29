@@ -42,6 +42,13 @@ def source_repo(tmp_path: Path) -> Path:
         json.dumps({"fixtures": fixtures}),
         encoding="utf-8",
     )
+    (source_repo_path / "architecture-duplicate-mirror.json").write_text(
+        json.dumps({
+            "observed": fixtures[0]["observed"],
+            "expected": fixtures[0]["expected"],
+        }),
+        encoding="utf-8",
+    )
     return tmp_path
 
 
