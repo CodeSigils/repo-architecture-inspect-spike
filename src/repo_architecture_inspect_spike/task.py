@@ -10,8 +10,9 @@ from inspect_ai import Task, task
 from inspect_ai.dataset import MemoryDataset, Sample
 from inspect_ai.model import GenerateConfig
 from inspect_ai.scorer import Score, Target, accuracy, scorer
-from inspect_ai.solver import TaskState
+from inspect_ai.solver import TaskState, solver
 from inspect_swe import codex_cli
+from inspect_ai.util import sandbox
 
 from repo_architecture_inspect_spike.contract import (
     compare_result,
@@ -63,6 +64,39 @@ def dataset() -> MemoryDataset:
     return MemoryDataset(samples=samples, name="repo-architecture-thin-adapter")
 
 
+@solver
+def materialize_shared_fixture():
+    """Write the shared case fixture into the per-sample sandbox."""
+
+    async def solve(state: TaskState, generate):
+        if state.sample_id == "architecture-duplicate-mirror":
+            contract = json.loads(
+                (source_repository() / "evals/cases/architecture-duplicate-mirror.json")
+                .read_text(encoding="utf-8")
+            )
+            environment = sandbox()
+            for path, contents in contract["fixture_files"].items():
+                await environment.write_file(path, contents)
+        return state
+
+    return solve
+
+
+async def shared_fixture_unchanged(state: TaskState) -> bool:
+    """Check that the declared shared fixture was not changed by the agent."""
+    if state.sample_id != "architecture-duplicate-mirror":
+        return True
+    contract = json.loads(
+        (source_repository() / "evals/cases/architecture-duplicate-mirror.json")
+        .read_text(encoding="utf-8")
+    )
+    environment = sandbox()
+    for path, expected in contract["fixture_files"].items():
+        if await environment.read_file(path) != expected:
+            return False
+    return True
+
+
 @scorer(metrics=[accuracy()])
 def architecture_contract():
     """Apply the repository-owned semantic comparison through Inspect."""
@@ -74,6 +108,13 @@ def architecture_contract():
             comparison = compare_result(result, expected)
         except (json.JSONDecodeError, TypeError, ValueError) as exc:
             return Score(value=0, answer=state.output.completion, explanation=str(exc))
+
+        if not await shared_fixture_unchanged(state):
+            return Score(
+                value=0,
+                answer=state.output.completion,
+                explanation="shared fixture changed during evaluation",
+            )
 
         return Score(
             value=1 if comparison.correct else 0,
@@ -89,6 +130,7 @@ def repo_architecture_audit() -> Task:
     """Run two existing cases through Codex CLI in an Inspect sandbox."""
     return Task(
         dataset=dataset(),
+        setup=materialize_shared_fixture(),
         solver=codex_cli(
             web_search="disabled",
             goals=False,

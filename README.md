@@ -34,7 +34,9 @@ final-filesystem equivalence.
 | Adoption decision | Human review after recorded results |
 
 The adapter reads the source manifest and shared equivalence case at runtime. It
-has no copied case file and no independent result schema.
+has no copied case file and no independent result schema. For the shared case,
+the setup solver materializes the declared fixture into the per-sample sandbox;
+the scorer verifies that those declared files are unchanged after execution.
 
 ## Setup
 
@@ -181,6 +183,7 @@ varies by archetype complexity, not input size.
 | Big Pickle Codex transport | ✅ Validated | 2/2 cases at 1.000, zero retries |
 | Configuration isolation | ✅ Confirmed | Loader-cwd independent source and Dockerfile paths |
 | Raw diagnostic fidelity | ✅ Confirmed | Retries, usage, timing, answer, scorer explanation in logs |
+| Shared fixture materialization and declared-file parity | ✅ Validated | Setup solver writes the source contract; scorer checks unchanged files |
 | Environment-limitation mapping | ✅ Confirmed | Credential/credit blockers documented |
 | Model-free scorer tests | ✅ Confirmed | 5 pytest tests pass |
 | Less orchestration than native | ✅ Confirmed | No case-manifest copy, no runner dependency |
